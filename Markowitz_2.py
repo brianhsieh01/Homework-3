@@ -75,6 +75,30 @@ class MyPortfolio:
         TODO: Complete Task 4 Below
         """
 
+        Sigma = self.returns[assets].cov().values
+        mu = self.returns[assets].mean().values
+        n = len(assets)
+
+        model = gp.Model("portfolio")
+
+        w = model.addMVar(n, name="w", ub=1, lb=0)
+        model.addConstr(w.sum() == 1, name="total_allocation")
+        model.setObjective(w @ mu - (self.gamma/2) * (w @ Sigma @ w), gp.GRB.MAXIMIZE)
+
+        model.optimize()
+
+        if model.status == gp.GRB.INF_OR_UNBD:
+            print(
+                "Model status is INF_OR_UNBD. Reoptimizing with DualReductions set to 0."
+            )
+        elif model.status == gp.GRB.INFEASIBLE:
+            print("Model is infeasible.")
+        elif model.status == gp.GRB.INF_OR_UNBD:
+            print("Model is infeasible or unbounded.")
+        if model.status == gp.GRB.OPTIMAL:
+            optimized_weights = w.X
+            self.portfolio_weights.loc[:, assets] = optimized_weights
+
         """
         TODO: Complete Task 4 Above
         """
